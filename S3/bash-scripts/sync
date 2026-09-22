@@ -1,0 +1,39 @@
+#!/usr/bin/env bash
+echo "sync"
+
+set -e
+
+if [ -z "$1" ]; then
+    echo "There needs to be a bucket name"
+    exit 1
+fi
+
+if [ -z "$2" ]; then
+    echo "There needs to be a filename prefix"
+    exit 1
+fi
+
+BUCKET_NAME=$1
+FILENAME_PREFIX=$2
+
+OUTPUT_DIR="/tmp/bash-scripts"
+
+# Use -rf so it doesn't fail if the directory doesn't exist yet
+rm -rf "$OUTPUT_DIR"
+
+mkdir -p "$OUTPUT_DIR"
+
+NUM_FILES=$((RANDOM % 6 + 5))
+
+for ((i=1; i<=NUM_FILES; i++)); do
+    # Corrected variable name to FILENAME_PREFIX and added index i
+    FILENAME="$OUTPUT_DIR/${FILENAME_PREFIX}_${i}.txt"
+
+    dd if=/dev/urandom of="$FILENAME" bs=1024 count=$((RANDOM % 1024 + 1)) 2>/dev/null
+done
+
+tree "$OUTPUT_DIR"
+
+# Sync the generated files to the target AWS S3 bucket
+echo "Syncing local files to s3://$BUCKET_NAME..."
+aws s3 sync "$OUTPUT_DIR" "s3://$BUCKET_NAME"
